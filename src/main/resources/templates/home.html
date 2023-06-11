@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>GDP World Ranking</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="css/layui.css" media="all">
+    <style type="text/css">
+        .nav-button {
+            border: 0;
+            background-color: transparent;
+            outline: none;
+            color: #c2c2c2;
+            cursor: pointer;
+        }
+
+        .nav-menu {
+            text-align: center;
+        }
+    </style>
+    <script type="text/javascript" src="layui.js"></script>
+    <script>
+        layui.use(['layer', 'util', 'laydate'], function () {
+            var layer = layui.layer
+                , util = layui.util
+                , $ = layui.$
+                , laydate = layui.laydate;
+            util.fixbar({
+                bar1: false
+                , bar2: false
+                , css: { right: 50, bottom: 100 }
+                , bgcolor: '#393D49'
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <div class="layui-layout layui-layout-admin">
+        <div class="layui-header">
+            <div class="layui-logo layui-hide-xs layui-bg-black">GDP World Ranking</div>
+            <ul class="layui-nav layui-layout-right">
+                <li class="layui-nav-item layui-hide layui-show-md-inline-block">
+                    <form th:action="@{/}" method="GET">
+                        <button name="refresh" type="submit" value="true" class="nav-button">Refresh</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+        <div class="layui-side layui-bg-black">
+            <div class="layui-side-scroll">
+                <ul class="layui-nav layui-nav-tree" lay-filter="test">
+                    <li class="layui-nav-item layui-nav-itemed">
+                        <a class="nav-menu" href="javascript:Logs">Statistical Result</a>
+                        <dl class="layui-nav-child" style="text-align: center;">
+                            <dd>
+                                <form th:action="@{/}" method="GET">
+                                    <button name="page" type="submit" value="World Map" class="nav-button">World
+                                        Map</button>
+                                </form>
+                            </dd>
+                            <dd>
+                                <form th:action="@{/}" method="GET">
+                                    <button name="page" type="submit" value="Bar Chart" class="nav-button">Bar
+                                        chart</button>
+                                </form>
+                            </dd>
+                            <dd>
+                                <form th:action="@{/}" method="GET">
+                                    <button name="page" type="submit" value="3D" class="nav-button">3D</button>
+                                </form>
+                            </dd>
+                            <dd>
+                                <form th:action="@{/}" method="GET">
+                                    <button name="page" type="submit" value="Sheet" class="nav-button">Sheet</button>
+                                </form>
+                            </dd>
+                        </dl>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="layui-body">
+            <fieldset class="layui-elem-field layui-field-title" style="margin-top: 50px;">
+                <legend align="center"><span th:text="${page}"></span></legend>
+            </fieldset>
+            <br>
+            <div th:if="${page == 'World Map'}">
+                <script src="Highcharts/code/highmaps.js"></script>
+                <script src="Highcharts/code/modules/data.js"></script>
+                <script src="Highcharts/code/modules/exporting.js"></script>
+                <script src="Highcharts/code/modules/offline-exporting.js"></script>
+                <script src="Highcharts/code/modules/accessibility.js"></script>
+                <!-- Flag sprites service provided by Martijn Lafeber, https://github.com/lafeber/world-flags-sprite/blob/master/LICENSE -->
+                <link rel="stylesheet" type="text/css" href="css/flags32-both.css" />
+                <div id="world_map"></div>
+                <style>
+                    #world_map {
+                        height: 700px;
+                        max-width: 1400px;
+                        margin: 0 auto;
+                    }
+
+                    .highcharts-tooltip>span {
+                        padding: 10px;
+                        white-space: normal !important;
+                        width: 200px;
+                    }
+
+                    .loading {
+                        margin-top: 10em;
+                        text-align: center;
+                        color: gray;
+                    }
+
+                    .f32 .flag {
+                        vertical-align: middle !important;
+                    }
+                </style>
+                <script>
+                    (async () => {
+                        const topology = await fetch(
+                            'Highcharts/world.topo.json'
+                        ).then(response => response.json());
+                        Highcharts.getJSON('gdp-per-capita-by-country.json', function (data) {
+                            data.forEach(function (p) {
+                                p.value = (p.value < 1 ? 1 : p.value);
+                            });
+                            Highcharts.mapChart('world_map', {
+                                credits: {
+                                    enabled: false
+                                },
+                                chart: {
+                                    map: topology
+                                },
+                                title: {
+                                    text: 'GDP per Capita by Country (2021)'
+                                },
+                                legend: {
+                                    title: {
+                                        text: 'GDP per Capita',
+                                        style: {
+                                            color: (
+                                                Highcharts.defaultOptions &&
+                                                Highcharts.defaultOptions.legend &&
+                                                Highcharts.defaultOptions.legend.title &&
+                                                Highcharts.defaultOptions.legend.title.style &&
+                                                Highcharts.defaultOptions.legend.title.style.color
+                                            ) || 'black'
+                                        }
+                                    }
+                                },
+                                mapNavigation: {
+                                    enabled: true,
+                                    buttonOptions: {
+                                        verticalAlign: 'bottom'
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'none',
+                                    borderWidth: 0,
+                                    shadow: false,
+                                    useHTML: true,
+                                    padding: 0,
+                                    pointFormat: '<span class="f32"><span class="flag {point.properties.hc-key}">' +
+                                        '</span></span> {point.name}<br>' +
+                                        '<span style="font-size:30px">{point.value} US$</span>',
+                                    positioner: function () {
+                                        return { x: 0, y: 250 };
+                                    }
+                                },
+                                colorAxis: {
+                                    min: undefined,
+                                    max: 100000,
+                                    type: 'linear',
+                                    labels: {
+                                        enabled: false
+                                    }
+                                },
+                                series: [{
+                                    data: data,
+                                    joinBy: ['iso-a3', 'code3'],
+                                    name: 'GDP per Capita'
+                                }]
+                            });
+                        });
+                    })();
+                </script>
+            </div>
+            <div th:if="${page == 'Bar Chart'}">
+                <form class="layui-form" th:action="@{/}" lay-filter="example" method="GET">
+                    <div class="layui-form-item" align="center">
+                        <div class="layui-inline">
+                            <div class="layui-input-inline" style="width: 100px;">
+                                <input type="number" name="left" placeholder="from" autocomplete="off"
+                                    class="layui-input">
+                            </div>
+                            <div class="layui-form-mid"> -> </div>
+                            <div class="layui-input-inline" style="width: 100px;">
+                                <input type="number" name="right" placeholder="to" autocomplete="off"
+                                    class="layui-input">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-btn-container" align="center">
+                            <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1" name="filter"
+                                value="true">Filter</button>
+                        </div>
+                    </div>
+                </form>
+                <div align="center">
+                    <blockquote class="layui-elem-quote layui-text" style="width:60%" th:if="${isValid == 'false'}">
+                        Error! Please enter a valid range.
+                    </blockquote>
+                    <blockquote class="layui-elem-quote layui-text" style="width:60%" th:unless="${isValid == 'false'}">
+                        Please enter a range, for example, enter 1 -> 10 to display the top ten countries, enter 10 -> 1
+                        to display the bottom ten.
+                    </blockquote>
+                </div>
+                <div th:if="${isValid == 'true'}">
+                    <script src="Highcharts/code/highcharts.js"></script>
+                    <script src="Highcharts/code/modules/exporting.js"></script>
+                    <script src="Highcharts/code/modules/export-data.js"></script>
+                    <script src="Highcharts/code/modules/accessibility.js"></script>
+                    <figure class="highcharts-figure">
+                        <div id="bar_chart"></div>
+                    </figure>
+                    <style th:inline="css">
+                        .highcharts-figure,
+                        .highcharts-data-table table {
+                            min-width: 310px;
+                            max-width: 1200px;
+                            margin: 1em auto;
+                        }
+
+                        #bar_chart {
+                            height: [[${height}]]px;
+                        }
+
+                        .highcharts-data-table table {
+                            font-family: Verdana, sans-serif;
+                            border-collapse: collapse;
+                            border: 1px solid #ebebeb;
+                            margin: 10px auto;
+                            text-align: center;
+                            width: 100%;
+                            max-width: 500px;
+                        }
+
+                        .highcharts-data-table caption {
+                            padding: 1em 0;
+                            font-size: 1.2em;
+                            color: #555;
+                        }
+
+                        .highcharts-data-table th {
+                            font-weight: 600;
+                            padding: 0.5em;
+                        }
+
+                        .highcharts-data-table td,
+                        .highcharts-data-table th,
+                        .highcharts-data-table caption {
+                            padding: 0.5em;
+                        }
+
+                        .highcharts-data-table thead tr,
+                        .highcharts-data-table tr:nth-child(even) {
+                            background: #f8f8f8;
+                        }
+
+                        .highcharts-data-table tr:hover {
+                            background: #f1f7ff;
+                        }
+                    </style>
+                    <script th:inline="javascript">
+                        Highcharts.chart('bar_chart', {
+                            credits: {
+                                enabled: false
+                            },
+                            chart: {
+                                type: 'bar'
+                            },
+                            title: {
+                                text: 'GDP per Capita by Country (2021)',
+                                align: 'center'
+                            },
+                            subtitle: {
+                                text: 'Source: <a ' +
+                                    'href="https://data.un.org"' +
+                                    'target="_blank">data.un.org</a>',
+                                align: 'left'
+                            },
+                            xAxis: {
+                                categories: /*[[${categories}]]*/[],
+                                title: {
+                                    text: null
+                                },
+                                gridLineWidth: 1,
+                                lineWidth: 0
+                            },
+                            yAxis: {
+                                min: 0,
+                                title: {
+                                    text: 'GDP per Capita',
+                                    align: 'high'
+                                },
+                                labels: {
+                                    overflow: 'justify'
+                                },
+                                gridLineWidth: 0
+                            },
+                            tooltip: {
+                                valueSuffix: ' US$'
+                            },
+                            plotOptions: {
+                                bar: {
+                                    dataLabels: {
+                                        enabled: true
+                                    },
+                                    groupPadding: 0.1
+                                }
+                            },
+                            legend: {
+                                layout: 'vertical',
+                                align: 'right',
+                                verticalAlign: 'top',
+                                x: -40,
+                                y: 80,
+                                floating: true,
+                                borderWidth: 1,
+                                backgroundColor:
+                                    Highcharts.defaultOptions.legend.backgroundColor || '#FFFFFF',
+                                shadow: true
+                            },
+                            series: [{
+                                name: 'Year 2021',
+                                data: /*[[${data}]]*/[]
+                            }]
+                        });
+                    </script>
+                </div>
+            </div>
+            <div th:if="${page == '3D'}">
+                <form class="layui-form" th:action="@{/}" lay-filter="example" method="GET">
+                    <div class="layui-form-item">
+                        <div class="layui-btn-container" align="center">
+                            <button type="submit" class="layui-btn" lay-submit="" lay-filter="demo1" name="randomise"
+                                value="true">Randomise</button>
+                        </div>
+                    </div>
+                </form>
+                <script src="Highcharts/code/highcharts.js"></script>
+                <script src="Highcharts/code/highcharts-3d.js"></script>
+                <script src="Highcharts/code/modules/exporting.js"></script>
+                <script src="Highcharts/code/modules/export-data.js"></script>
+                <script src="Highcharts/code/modules/accessibility.js"></script>
+                <figure class="highcharts-figure">
+                    <div id="column_3D"></div>
+                    <div id="sliders">
+                        <table>
+                            <tr>
+                                <td><label for="alpha">Alpha Angle</label></td>
+                                <td><input id="alpha" type="range" min="0" max="45" value="15" /> <span id="alpha-value"
+                                        class="value"></span></td>
+                            </tr>
+                            <tr>
+                                <td><label for="beta">Beta Angle</label></td>
+                                <td><input id="beta" type="range" min="-45" max="45" value="15" /> <span id="beta-value"
+                                        class="value"></span></td>
+                            </tr>
+                            <tr>
+                                <td><label for="depth">Depth</label></td>
+                                <td><input id="depth" type="range" min="20" max="100" value="50" /> <span
+                                        id="depth-value" class="value"></span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </figure>
+                <style>
+                    #column_3D {
+                        height: 580px;
+                    }
+
+                    .highcharts-figure,
+                    .highcharts-data-table table {
+                        min-width: 310px;
+                        max-width: 800px;
+                        margin: 1em auto;
+                    }
+
+                    #sliders td input[type="range"] {
+                        display: inline;
+                    }
+
+                    #sliders td {
+                        padding-right: 1em;
+                        white-space: nowrap;
+                    }
+                </style>
+                <script th:inline="javascript">
+                    const chart = new Highcharts.Chart({
+                        credits: {
+                            enabled: false
+                        },
+                        chart: {
+                            renderTo: 'column_3D',
+                            type: 'column',
+                            options3d: {
+                                enabled: true,
+                                alpha: 15,
+                                beta: 15,
+                                depth: 50,
+                                viewDistance: 25
+                            }
+                        },
+                        xAxis: {
+                            categories: /*[[${categories}]]*/[],
+                        },
+                        yAxis: {
+                            title: {
+                                enabled: false
+                            }
+                        },
+                        tooltip: {
+                            headerFormat: '<b>{point.key}</b><br>',
+                            pointFormat: 'GDP per Capita: {point.y} US$'
+                        },
+                        title: {
+                            text: 'GDP per Capita by Country (2021)',
+                            align: 'center'
+                        },
+                        subtitle: {
+                            text: 'Source: <a ' +
+                                'href="https://data.un.org"' +
+                                'target="_blank">data.un.org</a>',
+                            align: 'left'
+                        },
+                        legend: {
+                            enabled: false
+                        },
+                        plotOptions: {
+                            column: {
+                                depth: 25
+                            }
+                        },
+                        series: [{
+                            data: /*[[${data}]]*/[],
+                            colorByPoint: true
+                        }]
+                    });
+                    function showValues() {
+                        document.getElementById('alpha-value').innerHTML = chart.options.chart.options3d.alpha;
+                        document.getElementById('beta-value').innerHTML = chart.options.chart.options3d.beta;
+                        document.getElementById('depth-value').innerHTML = chart.options.chart.options3d.depth;
+                    }
+                    document.querySelectorAll('#sliders input').forEach(input => input.addEventListener('input', e => {
+                        chart.options.chart.options3d[e.target.id] = parseFloat(e.target.value);
+                        showValues();
+                        chart.redraw(false);
+                    }));
+                    showValues();
+                </script>
+            </div>
+            <div th:if="${page == 'Sheet'}">
+                <table class="layui-table" style="width:50%; margin-left:auto; margin-right:auto;">
+                    <colgroup>
+                        <col>
+                        <col>
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Country</th>
+                            <th>GDP pre Capita (US$)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item : ${list}">
+                            <td th:text="${item.key}"></td>
+                            <td th:text="${item.value}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </br>
+            </br>
+            </br>
+            </br>
+            </br>
+        </div>
+        <div class="layui-footer layui-text" align="center">
+            Author: kayak4665664&emsp;&emsp;&emsp;Email: <a class=""
+                href="mailto:contact@kayak4665664.com" target="_blank">contact@kayak4665664.com</a>
+        </div>
+    </div>
+</body>
